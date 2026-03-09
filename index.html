@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎮 Topup Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans">
+
+<!-- ════════════════════════════════════════════════════
+     CONFIGURATION — đổi URL này thành VPS của bạn
+     ════════════════════════════════════════════════════ -->
+<script>
+  const API_BASE = "https://103.54.153.158";
+</script>
+
+<!-- HEADER -->
+<header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🎮</span>
+      <div>
+        <h1 class="text-lg font-bold text-white leading-none">Topup Game</h1>
+        <p class="text-xs text-gray-500">Admin Dashboard</p>
+      </div>
+    </div>
+    <!-- Stats bar -->
+    <div id="stats-bar" class="flex gap-6 text-center text-sm">
+      <div>
+        <div id="stat-today" class="text-xl font-bold text-blue-400">—</div>
+        <div class="text-xs text-gray-500">Today</div>
+      </div>
+      <div>
+        <div id="stat-revenue" class="text-xl font-bold text-green-400">—</div>
+        <div class="text-xs text-gray-500">Revenue</div>
+      </div>
+      <div>
+        <div id="stat-pending" class="text-xl font-bold text-yellow-400">—</div>
+        <div class="text-xs text-gray-500">Pending</div>
+      </div>
+      <div>
+        <div id="stat-total" class="text-xl font-bold text-purple-400">—</div>
+        <div class="text-xs text-gray-500">All Time</div>
+      </div>
+    </div>
+    <button onclick="refreshAll()"
+      class="text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors px-3 py-2 rounded-lg hover:bg-gray-800">
+      🔄 Refresh
+    </button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-8 space-y-10">
+
+  <!-- ══════════════════════════════════════════════════
+       SERVICES TABLE
+       ══════════════════════════════════════════════════ -->
+  <section>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold text-white flex items-center gap-2">
+        🕹️ Game Services
+        <span id="services-count"
+          class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full"></span>
+      </h2>
+      <!-- Add service button -->
+      <button onclick="openAddModal()"
+        class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">
+        ＋ Add Service
+      </button>
+    </div>
+
+    <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-800/60 text-gray-400 text-xs uppercase tracking-wider">
+            <th class="px-5 py-3 text-left">ID</th>
+            <th class="px-5 py-3 text-left">Name</th>
+            <th class="px-5 py-3 text-right">Price (USD)</th>
+            <th class="px-5 py-3 text-center">Status</th>
+            <th class="px-5 py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="services-tbody" class="divide-y divide-gray-800">
+          <tr><td colspan="5" class="px-5 py-8 text-center text-gray-600">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       ORDERS TABLE
+       ══════════════════════════════════════════════════ -->
+  <section>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold text-white flex items-center gap-2">
+        📋 Orders
+        <span id="orders-count"
+          class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full"></span>
+      </h2>
+      <!-- Filter tabs -->
+      <div class="flex gap-1 bg-gray-800 rounded-lg p-1">
+        <button onclick="filterOrders(null)"  id="filter-all"        class="filter-btn active-filter">All</button>
+        <button onclick="filterOrders('PAID')" id="filter-PAID"      class="filter-btn">💰 Paid</button>
+        <button onclick="filterOrders('PROCESSING')" id="filter-PROCESSING" class="filter-btn">⚙️ Processing</button>
+        <button onclick="filterOrders('COMPLETED')"  id="filter-COMPLETED"  class="filter-btn">✅ Done</button>
+        <button onclick="filterOrders('PENDING')"    id="filter-PENDING"    class="filter-btn">⏳ Pending</button>
+        <button onclick="filterOrders('FAILED')"     id="filter-FAILED"     class="filter-btn">❌ Failed</button>
+      </div>
+    </div>
+
+    <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-800/60 text-gray-400 text-xs uppercase tracking-wider">
+              <th class="px-4 py-3 text-left">Order ID</th>
+              <th class="px-4 py-3 text-left">Customer</th>
+              <th class="px-4 py-3 text-left">Service</th>
+              <th class="px-4 py-3 text-left">Credentials</th>
+              <th class="px-4 py-3 text-right">Amount</th>
+              <th class="px-4 py-3 text-center">Status</th>
+              <th class="px-4 py-3 text-left">Processor</th>
+              <th class="px-4 py-3 text-left">Date</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody" class="divide-y divide-gray-800">
+            <tr><td colspan="8" class="px-5 py-8 text-center text-gray-600">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Add / Edit Service
+     ══════════════════════════════════════════════════════ -->
+<div id="service-modal"
+  class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md mx-4 p-6 shadow-2xl">
+    <h3 id="modal-title" class="text-lg font-bold text-white mb-5">Add Service</h3>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Service Name</label>
+        <input id="modal-name" type="text" placeholder="e.g. Free Fire 100 Diamonds"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white
+                 focus:outline-none focus:border-blue-500 transition-colors" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Price (USD)</label>
+        <input id="modal-price" type="number" step="0.01" min="0" placeholder="e.g. 9.99"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white
+                 focus:outline-none focus:border-blue-500 transition-colors" />
+      </div>
+    </div>
+
+    <input type="hidden" id="modal-service-id" value="" />
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModal()"
+        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">
+        Cancel
+      </button>
+      <button id="modal-save-btn" onclick="saveService()"
+        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TOAST NOTIFICATION
+     ══════════════════════════════════════════════════════ -->
+<div id="toast"
+  class="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium
+         transition-all duration-300 translate-y-20 opacity-0 pointer-events-none
+         bg-gray-800 border border-gray-600 text-white">
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     STYLES
+     ══════════════════════════════════════════════════════ -->
+<style>
+  .filter-btn {
+    @apply text-xs px-3 py-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors cursor-pointer;
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    color: #9ca3af;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .filter-btn:hover { color: white; background: #374151; }
+  .active-filter { background: #1d4ed8 !important; color: white !important; }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600;
+    border-width: 1px;
+  }
+  .s-PENDING    { background:#1f2937; color:#9ca3af; border-color:#374151; }
+  .s-PAID       { background:#1e3a5f; color:#60a5fa; border-color:#1d4ed8; }
+  .s-PROCESSING { background:#431407; color:#fb923c; border-color:#ea580c; }
+  .s-COMPLETED  { background:#052e16; color:#4ade80; border-color:#16a34a; }
+  .s-FAILED     { background:#450a0a; color:#f87171; border-color:#dc2626; }
+</style>
+
+
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT
+     ══════════════════════════════════════════════════════ -->
+<script>
+/* ── Helpers ──────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+
+function toast(msg, isError = false) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.style.background = isError ? '#7f1d1d' : '#1f2937';
+  el.style.borderColor = isError ? '#dc2626' : '#4b5563';
+  el.classList.remove('translate-y-20', 'opacity-0');
+  el.classList.add('translate-y-0', 'opacity-100');
+  setTimeout(() => {
+    el.classList.add('translate-y-20', 'opacity-0');
+    el.classList.remove('translate-y-0', 'opacity-100');
+  }, 3000);
+}
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(API_BASE + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+const STATUS_ICON = {
+  PENDING: '⏳', PAID: '💰', PROCESSING: '⚙️', COMPLETED: '✅', FAILED: '❌'
+};
+
+/* ── Stats ────────────────────────────────────────────────────────── */
+async function loadStats() {
+  try {
+    const s = await apiFetch('/api/orders/stats');
+    $('stat-today').textContent   = s.total_today;
+    $('stat-revenue').textContent = '$' + s.revenue_today.toFixed(2);
+    $('stat-pending').textContent = s.pending_action;
+    $('stat-total').textContent   = s.total_all;
+  } catch(e) {
+    console.error('Stats error:', e);
+  }
+}
+
+/* ── Services ─────────────────────────────────────────────────────── */
+async function loadServices() {
+  try {
+    const services = await apiFetch('/api/services');
+    $('services-count').textContent = services.length;
+
+    if (!services.length) {
+      $('services-tbody').innerHTML =
+        `<tr><td colspan="5" class="px-5 py-8 text-center text-gray-600">No services yet. Add one!</td></tr>`;
+      return;
+    }
+
+    $('services-tbody').innerHTML = services.map(s => `
+      <tr id="srow-${s.id}" class="hover:bg-gray-800/40 transition-colors">
+        <td class="px-5 py-3 text-gray-500 font-mono text-xs">#${s.id}</td>
+        <td class="px-5 py-3 font-medium text-white">${escHtml(s.name)}</td>
+        <td class="px-5 py-3 text-right text-green-400 font-semibold">$${s.price.toFixed(2)}</td>
+        <td class="px-5 py-3 text-center">
+          <span id="sbadge-${s.id}" class="status-badge ${s.status === 'ACTIVE' ? 's-COMPLETED' : 's-PROCESSING'}">
+            ${s.status === 'ACTIVE' ? '🟢 ACTIVE' : '🔴 MAINTENANCE'}
+          </span>
+        </td>
+        <td class="px-5 py-3 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <button onclick="toggleService(${s.id})"
+              id="tbtn-${s.id}"
+              class="text-xs px-3 py-1 rounded-lg font-semibold transition-colors
+                     ${s.status === 'ACTIVE'
+                       ? 'bg-yellow-700 hover:bg-yellow-600 text-white'
+                       : 'bg-green-700 hover:bg-green-600 text-white'}">
+              ${s.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+            </button>
+            <button onclick="openEditModal(${s.id}, '${escAttr(s.name)}', ${s.price})"
+              class="text-xs px-3 py-1 rounded-lg font-semibold bg-blue-700 hover:bg-blue-600 text-white transition-colors">
+              Edit
+            </button>
+            <button onclick="deleteService(${s.id}, '${escAttr(s.name)}')"
+              class="text-xs px-3 py-1 rounded-lg font-semibold bg-red-800 hover:bg-red-700 text-white transition-colors">
+              Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    toast('Failed to load services: ' + e.message, true);
+  }
+}
+
+async function toggleService(id) {
+  const btn = $(`tbtn-${id}`);
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const data = await apiFetch(`/api/services/${id}/toggle`, { method: 'POST' });
+    const isActive = data.status === 'ACTIVE';
+    const badge = $(`sbadge-${id}`);
+    badge.className = `status-badge ${isActive ? 's-COMPLETED' : 's-PROCESSING'}`;
+    badge.innerHTML = isActive ? '🟢 ACTIVE' : '🔴 MAINTENANCE';
+    btn.className = btn.className.replace(
+      isActive ? 'bg-green-700 hover:bg-green-600' : 'bg-yellow-700 hover:bg-yellow-600',
+      isActive ? 'bg-yellow-700 hover:bg-yellow-600' : 'bg-green-700 hover:bg-green-600'
+    );
+    btn.textContent = isActive ? 'Disable' : 'Enable';
+    toast(`✅ ${data.name} is now ${data.status}`);
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteService(id, name) {
+  if (!confirm(`Delete service "${name}"?\nThis cannot be undone.`)) return;
+  try {
+    await apiFetch(`/api/services/${id}`, { method: 'DELETE' });
+    toast(`🗑️ Service "${name}" deleted`);
+    loadServices();
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+/* ── Modal ────────────────────────────────────────────────────────── */
+function openAddModal() {
+  $('modal-title').textContent   = 'Add Service';
+  $('modal-service-id').value    = '';
+  $('modal-name').value          = '';
+  $('modal-price').value         = '';
+  $('modal-save-btn').textContent = 'Add Service';
+  $('service-modal').classList.remove('hidden');
+  $('modal-name').focus();
+}
+
+function openEditModal(id, name, price) {
+  $('modal-title').textContent    = 'Edit Service';
+  $('modal-service-id').value     = id;
+  $('modal-name').value           = name;
+  $('modal-price').value          = price;
+  $('modal-save-btn').textContent = 'Save Changes';
+  $('service-modal').classList.remove('hidden');
+  $('modal-name').focus();
+}
+
+function closeModal() {
+  $('service-modal').classList.add('hidden');
+}
+
+async function saveService() {
+  const id    = $('modal-service-id').value;
+  const name  = $('modal-name').value.trim();
+  const price = parseFloat($('modal-price').value);
+
+  if (!name) { toast('Service name is required!', true); return; }
+  if (isNaN(price) || price < 0) { toast('Enter a valid price!', true); return; }
+
+  const btn = $('modal-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    if (id) {
+      await apiFetch(`/api/services/${id}`, {
+        method: 'PUT', body: JSON.stringify({ name, price }),
+      });
+      toast(`✅ Service updated!`);
+    } else {
+      await apiFetch('/api/services', {
+        method: 'POST', body: JSON.stringify({ name, price }),
+      });
+      toast(`✅ Service "${name}" created!`);
+    }
+    closeModal();
+    loadServices();
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = id ? 'Save Changes' : 'Add Service';
+  }
+}
+
+/* ── Orders ───────────────────────────────────────────────────────── */
+let currentFilter = null;
+
+function filterOrders(status) {
+  currentFilter = status;
+  // Update active tab
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-filter'));
+  const activeId = status ? `filter-${status}` : 'filter-all';
+  if ($(activeId)) $(activeId).classList.add('active-filter');
+  loadOrders();
+}
+
+async function loadOrders() {
+  try {
+    const qs = currentFilter ? `?status=${currentFilter}` : '';
+    const orders = await apiFetch(`/api/orders${qs}`);
+    $('orders-count').textContent = orders.length;
+
+    if (!orders.length) {
+      $('orders-tbody').innerHTML =
+        `<tr><td colspan="8" class="px-5 py-8 text-center text-gray-600">No orders found.</td></tr>`;
+      return;
+    }
+
+    $('orders-tbody').innerHTML = orders.map(o => `
+      <tr class="hover:bg-gray-800/40 transition-colors">
+        <td class="px-4 py-3">
+          <span class="font-mono text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded">
+            ${o.id_short}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-white font-medium text-sm">${escHtml(o.customer_name)}</td>
+        <td class="px-4 py-3 text-blue-300 text-sm">${escHtml(o.service_name)}</td>
+        <td class="px-4 py-3">
+          <span class="font-mono text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded max-w-[140px] block truncate"
+                title="${escAttr(o.login_info)}">
+            ${escHtml(o.login_info.substring(0, 25))}${o.login_info.length > 25 ? '…' : ''}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right text-green-400 font-semibold">$${o.amount.toFixed(2)}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="status-badge s-${o.status}">
+            ${STATUS_ICON[o.status] || '?'} ${o.status}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-sm ${o.processor_name ? 'text-purple-300' : 'text-gray-600'}">
+          ${o.processor_name ? '👤 ' + escHtml(o.processor_name) : '—'}
+        </td>
+        <td class="px-4 py-3 text-gray-500 text-xs">${o.created_at}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    toast('Failed to load orders: ' + e.message, true);
+  }
+}
+
+/* ── Escape helpers ───────────────────────────────────────────────── */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) { return escHtml(str).replace(/'/g, '&#39;'); }
+
+/* ── Close modal on backdrop click ──────────────────────────────────*/
+$('service-modal').addEventListener('click', e => {
+  if (e.target === $('service-modal')) closeModal();
+});
+
+/* ── Enter key in modal ──────────────────────────────────────────── */
+['modal-name','modal-price'].forEach(id => {
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') saveService(); });
+});
+
+/* ── Initial load + auto-refresh every 30s ──────────────────────── */
+async function refreshAll() {
+  await Promise.all([loadStats(), loadServices(), loadOrders()]);
+}
+
+refreshAll();
+setInterval(refreshAll, 30000);
+</script>
+
+</body>
+</html>
