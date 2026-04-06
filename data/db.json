@@ -1,0 +1,177 @@
+{
+  "users": [
+    {
+      "chatId": 6941441964,
+      "username": "Minhdzvclll",
+      "firstName": "Ming nguyễn",
+      "joinedAt": 1775365458636,
+      "banned": false,
+      "freeCredits": 5,
+      "referralCredits": 0,
+      "paidCredits": 90,
+      "lastFreeReset": 1775365458636
+    },
+    {
+      "chatId": 364859989,
+      "username": "dec20",
+      "firstName": "dec20",
+      "joinedAt": 1775368274715,
+      "banned": false,
+      "freeCredits": 4,
+      "referralCredits": 0,
+      "paidCredits": 0,
+      "lastFreeReset": 1775368274715
+    },
+    {
+      "chatId": 7449218268,
+      "firstName": "Nguyễn Huy",
+      "joinedAt": 1775386894941,
+      "banned": false,
+      "freeCredits": 2,
+      "referralCredits": 0,
+      "paidCredits": 0
+    }
+  ],
+  "subscriptions": [],
+  "orderCache": [],
+  "logs": [
+    {
+      "chatId": 0,
+      "action": "sync_startup",
+      "detail": "synced:0 total:1",
+      "at": 1775365450680
+    },
+    {
+      "chatId": 0,
+      "action": "sync_startup",
+      "detail": "synced:0 total:1",
+      "at": 1775365629280
+    },
+    {
+      "chatId": 0,
+      "action": "sync_startup",
+      "detail": "synced:0 total:1",
+      "at": 1775366242141
+    },
+    {
+      "chatId": 6941441964,
+      "action": "add_paid",
+      "detail": "+30",
+      "at": 1775366248127
+    },
+    {
+      "chatId": 6941441964,
+      "action": "payment_received",
+      "detail": "txId:48363427 amount:50000 credits:+30 ref:31c94ba3-87f5-44bf-9692-8a765ec6ee47",
+      "at": 1775366248127
+    },
+    {
+      "chatId": 6941441964,
+      "action": "add_paid",
+      "detail": "+60",
+      "at": 1775366498351
+    },
+    {
+      "chatId": 6941441964,
+      "action": "payment_received",
+      "detail": "txId:48365694 amount:100000 credits:+60 ref:9b6cab66-1e03-4100-9367-1426c5a48216",
+      "at": 1775366498351
+    },
+    {
+      "chatId": 364859989,
+      "action": "add",
+      "detail": "SPXVN060187103644 cost:1 ownership:null",
+      "at": 1775368320563
+    },
+    {
+      "chatId": 364859989,
+      "action": "consume",
+      "detail": "-1 before:5",
+      "at": 1775368320579
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Người gửi đang chuẩn bị hàng → Đơn vị vận chuyển lấy hàng thành công",
+      "at": 1775376681330
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn vị vận chuyển lấy hàng thành công → Đơn hàng đã được phân loại và sẵn sàng trung chuyển đến điểm kế tiếp",
+      "at": 1775381481898
+    },
+    {
+      "chatId": 0,
+      "action": "sync_startup",
+      "detail": "synced:0 total:2",
+      "at": 1775386628736
+    },
+    {
+      "chatId": 0,
+      "action": "sync_startup",
+      "detail": "synced:0 total:1",
+      "at": 1775386870610
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đã được phân loại và sẵn sàng trung chuyển đến điểm kế tiếp → Đơn hàng đã xuất khỏi kho ",
+      "at": 1775387168047
+    },
+    {
+      "chatId": 0,
+      "action": "sync_startup",
+      "detail": "synced:0 total:1",
+      "at": 1775387526049
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đã xuất khỏi kho  → Đơn hàng đã đến kho ",
+      "at": 1775390464312
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đã đến kho  → Đơn hàng đã đến kho HCM Mega SOC",
+      "at": 1775391664311
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đã đến kho HCM Mega SOC → Đơn hàng đã được phân loại và sẵn sàng trung chuyển đến điểm kế tiếp",
+      "at": 1775394364742
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đã được phân loại và sẵn sàng trung chuyển đến điểm kế tiếp → Đơn hàng đang được trung chuyển  tới 51-HCM D3/Nhieu Loc Hub",
+      "at": 1775416270278
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đang được trung chuyển  tới 51-HCM D3/Nhieu Loc Hub → Đơn hàng đã đến kho 51-HCM D3/Nhieu Loc Hub",
+      "at": 1775429172079
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đơn hàng đã đến kho 51-HCM D3/Nhieu Loc Hub → Đang giao hàng",
+      "at": 1775436673302
+    },
+    {
+      "chatId": 364859989,
+      "action": "notify",
+      "detail": "SPXVN060187103644: Đang giao hàng → Giao hàng thành công [FINAL]",
+      "at": 1775447476320
+    },
+    {
+      "chatId": 0,
+      "action": "auto_untrack",
+      "detail": "SPXVN060187103644 final:Giao hàng thành công",
+      "at": 1775447476351
+    }
+  ]
+}
