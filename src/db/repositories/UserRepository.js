@@ -23,6 +23,8 @@ function create(chatId, { username, firstName } = {}) {
     freeCredits:     config.trialCredits || 0, // chỉ dùng thử, không reset
     referralCredits: 0,
     paidCredits:     0,
+    referredBy:      null,
+    refRewarded:     false,
   };
   db.get('users').push(user).write();
   return user;
@@ -33,4 +35,3 @@ function update(chatId, patch) {
 }
 
 module.exports = { findById, findAll, count, create, update };
-

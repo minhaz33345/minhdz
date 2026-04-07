@@ -1,21 +1,15 @@
-const TelegramBot = require('node-telegram-bot-api');
-const config      = require('../config');
-const router      = require('./router');
-const notifier    = require('../jobs/notifier');
+const ZaloBot    = require('./zaloBot');
+const config     = require('../config');
+const router     = require('./router');
+const notifier   = require('../jobs/notifier');
 const { syncOnStartup } = require('../jobs/syncCache');
 
 let botInstance = null;
 
 function init() {
-  const useWebhook = !!config.telegram.webhookUrl;
+  botInstance = new ZaloBot(config.zalo.token);
+  console.log('🤖 Zalo Bot v4 — WEBHOOK mode (Zalo chỉ hỗ trợ webhook)');
 
-  botInstance = useWebhook
-    ? new TelegramBot(config.telegram.token)
-    : new TelegramBot(config.telegram.token, { polling: true });
-
-  console.log(`🤖 Bot v4 — ${useWebhook ? 'WEBHOOK' : 'POLLING'} mode`);
-
-  router.register(botInstance);
   notifier.init(botInstance);
 
   // Sync cache sau 3s để đảm bảo config.express.apiKey đã load

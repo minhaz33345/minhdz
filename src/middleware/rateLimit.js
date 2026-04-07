@@ -1,5 +1,4 @@
 const CreditService = require('../services/CreditService');
-const { esc }       = require('../utils/format');
 
 async function checkBanned(bot, msg) {
   const chatId   = msg.chat.id;
@@ -7,8 +6,7 @@ async function checkBanned(bot, msg) {
   const user     = UserRepo.findById(chatId);
   if (user?.banned) {
     await bot.sendMessage(chatId,
-      '🚫 Tài khoản của bạn đã bị khóa\\. Liên hệ admin: /contact',
-      { parse_mode: 'MarkdownV2' }
+      '🚫 Tài khoản của bạn đã bị khóa. Liên hệ admin: /contact'
     );
     return false;
   }
@@ -21,10 +19,9 @@ async function hasEnoughCredits(bot, msg, amount = 1) {
   const bal    = CreditService.getBalance(chatId);
   if (bal.total < amount) {
     await bot.sendMessage(chatId,
-      `⚠️ *Không đủ số dư\\!*\n\n` +
-      `💰 Hiện có: *${esc(String(bal.total))}* đơn \\| Cần: *${esc(String(amount))}* đơn\n\n` +
-      `💳 Gõ /nap để nạp thêm đơn`,
-      { parse_mode: 'MarkdownV2' }
+      `⚠️ Không đủ số dư!\n\n` +
+      `💰 Hiện có: ${bal.total} đơn | Cần: ${amount} đơn\n\n` +
+      `💳 Gõ /nap để nạp thêm đơn`
     );
     return false;
   }

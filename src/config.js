@@ -7,10 +7,11 @@ function required(key) {
 }
 
 module.exports = {
-  telegram: {
-    token:      required('TELEGRAM_BOT_TOKEN'),
-    adminId:    parseInt(process.env.ADMIN_ID || '0', 10),
-    webhookUrl: process.env.WEBHOOK_URL || null,
+  zalo: {
+    token:         required('ZALO_BOT_TOKEN'),
+    adminId:       process.env.ZALO_ADMIN_ID || '',   // ID Zalo dạng hex string
+    webhookUrl:    process.env.WEBHOOK_URL || null,
+    webhookSecret: process.env.ZALO_WEBHOOK_SECRET || 'zalo_secret',
   },
   express: {
     apiKey:  process.env.EXPRESS_API_KEY || null,
@@ -21,8 +22,13 @@ module.exports = {
   server: {
     port: parseInt(process.env.PORT || '3000', 10),
   },
+  bot: {
+    maintenance: process.env.BOT_MAINTENANCE === '1',
+  },
   notify: {
     intervalSec: parseInt(process.env.NOTIFY_INTERVAL || '60', 10),
+    batchSize:   parseInt(process.env.NOTIFY_BATCH_SIZE || '5', 10),
+    batchGapMs:  parseInt(process.env.NOTIFY_BATCH_GAP_MS || '150', 10),
   },
   credits: {
     monthlyFreeByPlan: { free: 5, pro: 20, business: 50 },

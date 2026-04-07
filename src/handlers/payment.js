@@ -1,18 +1,16 @@
 const config        = require('../config');
 const CreditService = require('../services/CreditService');
 const { safeSend }  = require('../utils/sender');
-const { esc }       = require('../utils/format');
+const session       = require('../utils/session');
 
-async function send(bot, chatId, text, extra = {}) {
-  return safeSend(bot, chatId, text, extra);
+async function send(bot, chatId, text) {
+  return safeSend(bot, chatId, text);
 }
 
 // Tính số đơn từ số tiền dựa theo bảng giá
 function calcCredits(amount) {
-  // Tìm gói khớp chính xác trước
   const pkg = config.packages.find(p => p.amount === amount);
   if (pkg) return pkg.credits;
-  // Tính tỷ lệ theo gói nhỏ nhất (20k = 10 đơn → 2000đ/đơn)
   return Math.floor(amount / 2000);
 }
 
@@ -33,7 +31,7 @@ function makeQrUrl(amount, content) {
   return `https://qr.sepay.vn/img?${p.toString()}`;
 }
 
-// /nap — hiện bảng giá
+// /nap — hiện bảng giá dạng text menu
 async function handleNap(bot, msg, args) {
   const chatId  = msg.chat.id;
   const bal     = CreditService.getBalance(chatId);
@@ -43,94 +41,85 @@ async function handleNap(bot, msg, args) {
   if (args[0] && /^\d+$/.test(args[0])) {
     const amount  = parseInt(args[0]);
     const credits = calcCredits(amount);
-    if (credits <= 0) return send(bot, chatId, `❌ Số tiền tối thiểu *20\\.000đ*\\.`);
+    if (credits <= 0) return send(bot, chatId, `❌ Số tiền tối thiểu 20.000đ.`);
     return _sendQr(bot, chatId, amount, credits, content, bal.total);
   }
 
-  // Bảng giá inline keyboard
-  const keyboard = config.packages.map(p => ([{
-    text:          `${(p.amount/1000).toFixed(0)}k → ${p.credits} đơn`,
-    callback_data: `nap_amount:${p.amount}`,
-  }]));
-  keyboard.push([{ text: '✏️ Nhập số tiền khác', callback_data: 'nap_custom' }]);
+  // Bảng giá text menu
+  const lines = [
+    `💳 NẠP ĐƠN\n`,
+    `💰 Số dư hiện tại: ${bal.total} đơn\n`,
+    `📦 BẢNG GIÁ`,
+    ...config.packages.map((p, i) => `${i + 1}. ${(p.amount/1000).toFixed(0)}k → ${p.credits} đơn`),
+    `${config.packages.length + 1}. Nhập số tiền khác`,
+    `\nGõ số thứ tự để chọn, hoặc /huy để hủy`,
+  ];
 
-  await send(bot, chatId,
-    `💳 *NẠP ĐƠN*\n\n` +
-    `💰 Số dư hiện tại: *${esc(String(bal.total))}* đơn\n\n` +
-    `📦 *BẢNG GIÁ*\n` +
-    `• 20\\.000đ → 10 đơn\n` +
-    `• 50\\.000đ → 30 đơn\n` +
-    `• 100\\.000đ → 70 đơn\n` +
-    `• 200\\.000đ → 160 đơn\n\n` +
-    `Chọn mệnh giá:`,
-    { reply_markup: { inline_keyboard: keyboard } }
-  );
+  session.set(chatId, { step: 'nap_select' });
+  await send(bot, chatId, lines.join('\n'));
 }
 
+// Xử lý chọn gói nạp từ text menu
+async function handleNapSelect(bot, chatId, text) {
+  const choice = parseInt(text.trim());
+  const bal    = CreditService.getBalance(chatId);
+
+  if (isNaN(choice) || choice < 1 || choice > config.packages.length + 1) {
+    return send(bot, chatId, `❌ Gõ số từ 1 đến ${config.packages.length + 1}, hoặc /huy để hủy.`);
+  }
+
+  if (choice === config.packages.length + 1) {
+    // Nhập số tiền tùy chỉnh
+    session.set(chatId, { step: 'nap_custom_amount' });
+    return send(bot, chatId, `✏️ Nhập số tiền muốn nạp (VNĐ):\n\nTối thiểu 20.000đ\n(Hoặc /huy để hủy)`);
+  }
+
+  const pkg     = config.packages[choice - 1];
+  const content = transferContent(chatId);
+  session.clear(chatId);
+  await _sendQr(bot, chatId, pkg.amount, pkg.credits, content, bal.total);
+}
 
 async function _sendQr(bot, chatId, amount, credits, content, currentBal) {
   const qrUrl     = makeQrUrl(amount, content);
-  const amountFmt = esc(amount.toLocaleString('vi-VN'));
+  const amountFmt = amount.toLocaleString('vi-VN');
 
-  try {
-    await bot.sendPhoto(chatId, qrUrl, {
-      caption:
-        `💳 *NẠP ${esc(String(credits))} ĐƠN*\n\n` +
-        `🏦 ${esc(config.sepay.bankName)} \\| \`${esc(config.sepay.bankAccount)}\`\n` +
-        `👤 ${esc(config.sepay.accountName)}\n` +
-        `💰 Số tiền: *${amountFmt}đ*\n` +
-        `📝 Nội dung: \`${esc(content)}\`\n\n` +
-        `⚠️ *Nhập đúng nội dung để bot tự động cộng đơn*`,
-      parse_mode: 'MarkdownV2',
-    });
-  } catch {
-    await send(bot, chatId,
-      `💳 *NẠP ${esc(String(credits))} ĐƠN*\n\n` +
-      `🏦 ${esc(config.sepay.bankName)} \\| \`${esc(config.sepay.bankAccount)}\`\n` +
-      `👤 ${esc(config.sepay.accountName)}\n` +
-      `💰 Số tiền: *${amountFmt}đ*\n` +
-      `📝 Nội dung: \`${esc(content)}\`\n\n` +
-      `⚠️ *Nhập đúng nội dung để bot tự động cộng đơn*`
-    );
-  }
+  // Gửi ảnh QR kèm caption
+  await bot.sendPhoto(chatId, qrUrl,
+    `💳 NẠP ${credits} ĐƠN\n\n` +
+    `🏦 ${config.sepay.bankName} | ${config.sepay.bankAccount}\n` +
+    `👤 ${config.sepay.accountName}\n` +
+    `💰 Số tiền: ${amountFmt}đ\n` +
+    `📝 Nội dung: ${content}\n\n` +
+    `⚠️ Nhập đúng nội dung để bot tự động cộng đơn`
+  );
 
   await send(bot, chatId,
-    `⏳ Sau khi chuyển khoản bot sẽ tự cộng *${esc(String(credits))}* đơn trong vài giây\\.\n` +
-    `💰 Số dư hiện tại: *${esc(String(currentBal))}* đơn`
+    `⏳ Sau khi chuyển khoản bot sẽ tự cộng ${credits} đơn trong vài giây.\n` +
+    `💰 Số dư hiện tại: ${currentBal} đơn\n\n` +
+    `Gõ /huy nếu muốn hủy thao tác.`
   );
-}
-
-async function handleNapCallback(bot, chatId, msgId, amount) {
-  const credits = calcCredits(amount);
-  const content = transferContent(chatId);
-  const bal     = CreditService.getBalance(chatId);
-  await bot.deleteMessage(chatId, msgId).catch(() => {});
-  await _sendQr(bot, chatId, amount, credits, content, bal.total);
-}
-
-async function handleNapCustom(bot, chatId, msgId) {
-  const { set } = require('../utils/session');
-  set(chatId, { step: 'nap_custom_amount' });
-  await bot.editMessageText(
-    `✏️ *Nhập số tiền muốn nạp* \\(VNĐ\\):\n\nTối thiểu *20\\.000đ*`,
-    { chat_id: chatId, message_id: msgId, parse_mode: 'MarkdownV2',
-      reply_markup: { inline_keyboard: [[{ text: '❌ Hủy', callback_data: 'nap_cancel' }]] } }
-  ).catch(() => {});
 }
 
 async function handleNapCustomInput(bot, chatId, text) {
   const amount  = parseInt(text.replace(/[.,\s]/g, ''));
   if (isNaN(amount) || amount < 20000) {
-    await safeSend(bot, chatId, `❌ Tối thiểu *20\\.000đ*\\.`);
-    return;
+    return send(bot, chatId, `❌ Tối thiểu 20.000đ.`);
   }
   const credits = calcCredits(amount);
   const content = transferContent(chatId);
   const bal     = CreditService.getBalance(chatId);
+  session.clear(chatId);
   await _sendQr(bot, chatId, amount, credits, content, bal.total);
 }
 
+// clearNapFlow — Zalo không có delete message, chỉ clear session
+async function clearNapFlow(bot, chatId) {
+  session.unset(chatId, ['step', 'napMessageIds']);
+}
+
 module.exports = {
-  handleNap, handleNapCallback, handleNapCustom,
-  handleNapCustomInput, transferContent, calcCredits,
+  handleNap, handleNapSelect,
+  handleNapCustomInput,
+  clearNapFlow, transferContent, calcCredits,
 };
