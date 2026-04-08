@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { logout } from '@/lib/api';
@@ -13,12 +13,11 @@ const navItems = [
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const [user, setUser] = useState<{ firstName?: string; username?: string; chatId?: string } | null>(null);
-
-  useEffect(() => {
-    const u = localStorage.getItem('user_info');
-    if (u) setUser(JSON.parse(u));
-  }, []);
+  const [user] = useState<{ firstName?: string; username?: string; chatId?: string } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const storedUser = localStorage.getItem('user_info');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   async function handleLogout() {
     await logout();
