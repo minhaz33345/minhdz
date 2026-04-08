@@ -64,7 +64,7 @@ function parseInput(text) {
 
 // Lấy latest status + location từ tracking_history
 function extractLatest(order) {
-  const history = order.tracking_history || [];
+  const history = getSortedTrackingHistory(order);
   if (!history.length) return { status: null, location: null, time: null };
   const last = history[history.length - 1];
   return {
@@ -72,6 +72,25 @@ function extractLatest(order) {
     location: last.location ? last.location.split('☎')[0].trim() : null,
     time:     last.time     || null,
   };
+}
+
+function toMillis(t) {
+  if (!t) return null;
+  const n = Date.parse(t);
+  return Number.isNaN(n) ? null : n;
+}
+
+// API có thể trả tracking_history không đúng thứ tự, nên luôn sort theo time tăng dần
+function getSortedTrackingHistory(order) {
+  const history = Array.isArray(order?.tracking_history) ? order.tracking_history : [];
+  return [...history].sort((a, b) => {
+    const ta = toMillis(a?.time);
+    const tb = toMillis(b?.time);
+    if (ta == null && tb == null) return 0;
+    if (ta == null) return -1;
+    if (tb == null) return 1;
+    return ta - tb;
+  });
 }
 
 // Lấy credit cost của 1 partner
@@ -147,7 +166,12 @@ async function addAndTrack(chatId, parsed) {
 
   // Subscribe và cache — lưu chatId là owner nếu đây là lần đầu add
   SubRepo.add(chatId, fullCode);
-  if (status) OrderCacheRepo.upsert(fullCode, status, name, chatId);
+  if (status) {
+    OrderCacheRepo.upsert(fullCode, status, name, chatId, {
+      lastTrackingTime: toMillis(latest.time),
+      lastTrackingSignature: `${latest.time || ''}|${latest.status || ''}|${latest.location || ''}`,
+    });
+  }
   LogRepo.append(chatId, 'add', `${fullCode} cost:${creditCost} ownership:${ownership}`);
 
   return {
@@ -205,7 +229,7 @@ async function deleteOrder(chatId, code, partner = null) {
 }
 
 module.exports = {
-  parseInput, extractLatest,
+  parseInput, extractLatest, getSortedTrackingHistory, toMillis,
   addAndTrack, untrack, getTrackedList, subscribeAll,
   renameOrder, deleteOrder,
   PARTNER_DISPLAY,

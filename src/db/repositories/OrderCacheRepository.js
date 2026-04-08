@@ -16,20 +16,32 @@ function findByCode(code) {
 }
 
 // addedBy: chatId của người đầu tiên add đơn này
-function upsert(code, status, name, addedBy = null) {
+// meta: { lastTrackingTime, lastTrackingSignature }
+function upsert(code, status, name, addedBy = null, meta = {}) {
   const upper    = code.toUpperCase();
   const existing = cache.get('orders').find({ code: upper }).value();
+  const patch    = {
+    status,
+    name,
+    updatedAt: Date.now(),
+  };
+
+  if (Object.prototype.hasOwnProperty.call(meta, 'lastTrackingTime')) {
+    patch.lastTrackingTime = meta.lastTrackingTime;
+  }
+  if (Object.prototype.hasOwnProperty.call(meta, 'lastTrackingSignature')) {
+    patch.lastTrackingSignature = meta.lastTrackingSignature;
+  }
+
   if (existing) {
     // Cập nhật status/name nhưng GIỮ NGUYÊN addedBy ban đầu
     cache.get('orders').find({ code: upper })
-      .assign({ status, name, updatedAt: Date.now() }).write();
+      .assign(patch).write();
   } else {
     cache.get('orders').push({
       code:      upper,
-      status,
-      name,
+      ...patch,
       addedBy,   // chatId đầu tiên add — null nếu từ sync startup
-      updatedAt: Date.now(),
     }).write();
   }
 }

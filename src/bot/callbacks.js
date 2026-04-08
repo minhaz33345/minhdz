@@ -1,12 +1,19 @@
 const { safeEdit } = require('../utils/sender');
 const orderHandler = require('../handlers/orders');
 const payment      = require('../handlers/payment');
-const OrderService = require('../services/OrderService');
-const session      = require('../utils/session');
+const config       = require('../config');
 
 async function handle(bot, q) {
   const chatId = q.message.chat.id;
   const msgId  = q.message.message_id;
+  const isAdmin = q.from && q.from.id === config.telegram.adminId;
+  if (config.bot.maintenance && !isAdmin) {
+    await bot.answerCallbackQuery(q.id, {
+      text: 'Bot đang bảo trì, vui lòng thử lại sau.',
+      show_alert: true,
+    });
+    return;
+  }
   await bot.answerCallbackQuery(q.id);
 
   try {
@@ -61,10 +68,19 @@ async function handle(bot, q) {
     } else if (d === 'nap_custom') {
       await payment.handleNapCustom(bot, chatId, msgId);
 
+    } else if (d === 'nap_cancel_pay') {
+      await payment.handleNapCancelAsk(bot, chatId, msgId);
+
+    } else if (d === 'nap_cancel_confirm') {
+      await payment.handleNapCancelConfirm(bot, chatId, msgId);
+
+    } else if (d === 'nap_cancel_abort') {
+      await payment.handleNapCancelAbort(bot, chatId, msgId);
+
     } else if (d === 'nap_cancel') {
       const { clear } = require('../utils/session');
       clear(chatId);
-      await safeEdit(bot, chatId, msgId, '❎ Đã hủy nạp đơn\.');
+      await safeEdit(bot, chatId, msgId, '❎ Đã hủy nạp đơn\\.');
 
     } else if (d === 'clearlist_cancel') {
       await safeEdit(bot, chatId, msgId, '❎ Đã hủy\\.');

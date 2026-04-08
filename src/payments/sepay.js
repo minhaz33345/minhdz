@@ -16,6 +16,20 @@ function parseChatId(content = '') {
   return m ? parseInt(m[1]) : null;
 }
 
+
+function rewardReferrerOnFirstTopup(chatId) {
+  const user = UserRepo.findById(chatId);
+  if (!user) return null;
+  if (!user.referredBy || user.refRewarded) return null;
+
+  const referrerId = user.referredBy;
+  CreditService.ensureUser(referrerId);
+  CreditService.addReferral(referrerId, 1);
+  UserRepo.update(chatId, { refRewarded: true });
+  LogRepo.append(referrerId, 'ref_reward', `from:${chatId} +1`);
+  return referrerId;
+}
+
 // Xử lý webhook từ SePay
 async function handleWebhook(req, res) {
   try {
@@ -75,10 +89,13 @@ async function handleWebhook(req, res) {
     // Nạp credit
     await CreditService.addPaid(chatId, credits);
 
-    // Lưu log nạp thành công kèm transactionId
-    await LogRepo.append(chatId, 'payment_received', `txId:${transactionId} amount:${amount} credits:+${credits} ref:${data.referenceCode || ''}`);
+    // Thưởng giới thiệu 1 lần đầu khi user được mời nạp thành công
+    const referrerId = rewardReferrerOnFirstTopup(chatId);
 
-    console.log(`[SePay] ✅ Payment: chatId=${chatId} amount=${amount}đ → +${credits} đơn (Mã GD SePay: ${transactionId})`);
+    // Lưu log nạp thành công kèm transactionId
+    await LogRepo.append(chatId, 'payment_received', `txId:${transactionId} amount:${amount} credits:+${credits} ref:${data.referenceCode || ''} referrer:${referrerId || ''}`);
+
+    console.log(`[SePay] ✅ Payment: chatId=${chatId} amount=${amount}đ → +${credits} đơn${referrerId ? ` | referrer:+1 to ${referrerId}` : ''} (Mã GD SePay: ${transactionId})`);
 
     // Trả về success để SePay không retry
     return res.json({ success: true });

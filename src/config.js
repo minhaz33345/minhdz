@@ -21,6 +21,9 @@ module.exports = {
   server: {
     port: parseInt(process.env.PORT || '3000', 10),
   },
+  bot: {
+    maintenance: process.env.BOT_MAINTENANCE === '1',
+  },
   notify: {
     intervalSec: parseInt(process.env.NOTIFY_INTERVAL || '60', 10),
   },

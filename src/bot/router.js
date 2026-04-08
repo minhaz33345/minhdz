@@ -5,6 +5,11 @@ const payment   = require('../handlers/payment');
 const callbacks = require('./callbacks');
 const session   = require('../utils/session');
 const CreditService = require('../services/CreditService');
+const config    = require('../config');
+
+function isAdminUser(msg) {
+  return msg.from && msg.from.id === config.telegram.adminId;
+}
 
 function parse(text = '') {
   const m = text.match(/^\/(\w+)(?:@\S+)?\s*([\s\S]*)?$/);
@@ -22,6 +27,14 @@ function register(bot) {
     });
 
     const parsed = parse(msg.text);
+
+    if (config.bot.maintenance && !isAdminUser(msg)) {
+      return bot.sendMessage(
+        msg.chat.id,
+        '🛠️ Bot đang bảo trì\\. Vui lòng quay lại sau nhé\\.',
+        { parse_mode: 'MarkdownV2' }
+      );
+    }
 
     if (!parsed) {
       const sess = session.get(msg.chat.id);
@@ -43,6 +56,7 @@ function register(bot) {
         case 'help':       return account.handleHelp(bot, msg);
         case 'me':         return account.handleMe(bot, msg);
         case 'contact':    return account.handleContact(bot, msg);
+        case 'ref':        return account.handleRef(bot, msg);
         case 'cancel':
         case 'huy':        return account.handleCancel(bot, msg);
 
@@ -56,6 +70,9 @@ function register(bot) {
         case 'broadcast':  return admin.handleBroadcast(bot, msg, args);
         case 'logs':       return admin.handleLogs(bot, msg);
         case 'balance':    return admin.handleBalance(bot, msg);
+        case 'botoff':     return admin.handleBotOff(bot, msg);
+        case 'boton':      return admin.handleBotOn(bot, msg);
+        case 'maintenance':return admin.handleMaintenanceStatus(bot, msg);
 
         // Orders
         case 'add':        return orders.handleAdd(bot, msg, args);

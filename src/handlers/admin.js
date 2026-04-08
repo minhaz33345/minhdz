@@ -36,12 +36,16 @@ async function handleAdmin(bot, msg) {
     `⚙️ *ADMIN*\n\n` +
     `👥 Users: *${esc(String(UserRepo.count()))}*\n` +
     `🔔 Subscriptions: *${esc(String(SubRepo.findAll().length))}*\n\n` +
+    `🛠️ Maintenance: *${config.bot.maintenance ? 'ON' : 'OFF'}*\n\n` +
     `/users /ban /unban\n` +
     `/addcredits \\<id\\> \\<số\\> \\- Nạp đơn\n` +
     `/broadcast \\- Thông báo tất cả\n` +
     `/logs \\- Log gần đây\n` +
     `/balance \\- Số dư API\n` +
-    `/setkey \\- Cập nhật API key`
+    `/setkey \\- Cập nhật API key\n` +
+    `/botoff \\- Bật bảo trì\n` +
+    `/boton \\- Tắt bảo trì\n` +
+    `/maintenance \\- Xem trạng thái`
   );
 }
 
@@ -133,9 +137,33 @@ async function handleBalance(bot, msg) {
   }
 }
 
+async function handleBotOff(bot, msg) {
+  if (!guard(bot, msg)) return;
+  config.bot.maintenance = true;
+  LogRepo.append(msg.chat.id, 'maintenance', 'on');
+  await send(bot, msg.chat.id, '🛠️ Đã *BẬT* chế độ bảo trì\\. Chỉ admin dùng bot được\\.');
+}
+
+async function handleBotOn(bot, msg) {
+  if (!guard(bot, msg)) return;
+  config.bot.maintenance = false;
+  LogRepo.append(msg.chat.id, 'maintenance', 'off');
+  await send(bot, msg.chat.id, '✅ Đã *TẮT* bảo trì\\. User dùng bot lại bình thường\\.');
+}
+
+async function handleMaintenanceStatus(bot, msg) {
+  if (!guard(bot, msg)) return;
+  await send(
+    bot,
+    msg.chat.id,
+    `🛠️ Maintenance hiện tại: *${config.bot.maintenance ? 'ON' : 'OFF'}*`
+  );
+}
+
 module.exports = {
   isAdmin,
   handleSetKey, handleAdmin, handleUsers,
   handleBan, handleUnban, handleAddCredits,
   handleBroadcast, handleLogs, handleBalance,
+  handleBotOff, handleBotOn, handleMaintenanceStatus,
 };
