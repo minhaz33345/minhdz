@@ -3,6 +3,7 @@ const DEFAULT_DB = {
   subscriptions: [],
   orderCache:    [],
   logs:          [],
+  apiKeys:       [],
 };
 
 module.exports = { DEFAULT_DB };

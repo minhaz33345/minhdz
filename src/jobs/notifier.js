@@ -44,6 +44,7 @@ function init(bot) {
   intervalRef = setInterval(run, config.notify.intervalSec * 1000);
 }
 
+
 function triggerNow(reason = 'manual') {
   if (!botRef) return;
   if (isRunning) {
@@ -104,6 +105,7 @@ async function _processCode(code) {
       await _notifyAll(code, name, oldStatus, eventToNotify, newEvents.length, isFinal);
 
       if (isFinal) {
+        // Ngừng theo dõi tất cả user đang track đơn này
         const chatIds = SubRepo.chatIdsForCode(code);
         chatIds.forEach(chatId => SubRepo.remove(chatId, code));
         LogRepo.append(0, 'auto_untrack', `${code} final:${newStatus}`);
@@ -132,6 +134,7 @@ function _extractNewEvents(history, cached) {
 
   if (lastTime == null && !lastSig) return [];
 
+  // Cắt theo event cuối cùng đã xử lý để tránh notify lặp, kể cả event thiếu time.
   if (lastSig) {
     const lastIdx = history.map((e, idx) => ({ e, idx })).reverse().find(({ e }) => {
       const sig = _eventSignature(e);
@@ -144,6 +147,7 @@ function _extractNewEvents(history, cached) {
     if (typeof lastIdx === 'number') return history.slice(lastIdx + 1);
   }
 
+  // Fallback cho dữ liệu legacy chưa có signature/time đồng bộ.
   return history.filter((e) => {
     const t = toMillis(e.time);
     return lastTime != null && t != null && t > lastTime;
@@ -151,39 +155,45 @@ function _extractNewEvents(history, cached) {
 }
 
 async function _notifyAll(code, name, oldStatus, latestEvent, newEventCount, isFinal) {
-  const chatIds   = SubRepo.chatIdsForCode(code);
+  const chatIds = SubRepo.chatIdsForCode(code);
   const newStatus = latestEvent.status || oldStatus;
   const location  = latestEvent.location ? latestEvent.location.split('☎')[0].trim() : '';
-  const locLine   = location ? `\n📍 ${location}` : '';
-  const timeLine  = latestEvent.time ? `\n🕒 ${latestEvent.time}` : '';
-  const flowLine  = newEventCount > 1 ? `\n📈 Có ${newEventCount} chặng mới từ API` : '';
+  const locLine   = location ? `\n📍 ${_esc(location)}` : '';
+  const timeLine  = latestEvent.time ? `\n🕒 ${_esc(latestEvent.time)}` : '';
+  const flowLine  = newEventCount > 1 ? `\n📈 Có *${newEventCount}* chặng mới từ API` : '';
 
   let text;
   if (isFinal) {
     text = (
-      `✅ ĐƠN HÀNG ĐÃ GIAO THÀNH CÔNG\n\n` +
-      `📦 ${name}\n` +
-      `🔖 Mã: ${code.replace(/-\d{4}$/, '')}\n\n` +
-      `📌 ${newStatus}${locLine}${timeLine}${flowLine}\n\n` +
-      `Bot đã ngừng theo dõi đơn này.`
+      `✅ *ĐƠN HÀNG ĐÃ GIAO THÀNH CÔNG*\n\n` +
+      `📦 *${_esc(name)}*\n` +
+      `🔖 Mã: \`${_esc(code.replace(/-\d{4}$/, ''))}\`\n\n` +
+      `📌 *${_esc(newStatus)}*${locLine}${timeLine}${flowLine}\n\n` +
+      `_Bot đã ngừng theo dõi đơn này\\._`
     );
   } else {
     text = (
-      `🔔 CẬP NHẬT ĐƠN HÀNG\n\n` +
-      `📦 ${name}\n` +
-      `🔖 Mã: ${code.replace(/-\d{4}$/, '')}\n\n` +
-      `📌 ${oldStatus} ➡️ ${newStatus}${locLine}${timeLine}${flowLine}`
+      `🔔 *CẬP NHẬT ĐƠN HÀNG*\n\n` +
+      `📦 *${_esc(name)}*\n` +
+      `🔖 Mã: \`${_esc(code.replace(/-\d{4}$/, ''))}\`\n\n` +
+      `📌 ${_esc(oldStatus)} ➡️ *${_esc(newStatus)}*${locLine}${timeLine}${flowLine}`
     );
   }
 
   for (const chatId of chatIds) {
     try {
-      await botRef.sendMessage(chatId, text);
+      const { safeSend } = require('../utils/sender');
+      await safeSend(botRef, chatId, text);
       LogRepo.append(chatId, 'notify', `${code}: ${oldStatus} → ${newStatus}${isFinal ? ' [FINAL]' : ''}`);
     } catch (e) {
       console.error(`[Notify] Failed chatId=${chatId} code=${code}: ${e.message}`);
     }
   }
+}
+
+function _esc(t) {
+  if (t == null) return '';
+  return String(t).replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
 }
 
 module.exports = { init, stop, triggerNow };
