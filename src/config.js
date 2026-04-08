@@ -7,11 +7,10 @@ function required(key) {
 }
 
 module.exports = {
-  zalo: {
-    token:         required('ZALO_BOT_TOKEN'),
-    adminId:       process.env.ZALO_ADMIN_ID || '',   // ID Zalo dạng hex string
-    webhookUrl:    process.env.WEBHOOK_URL || null,
-    webhookSecret: process.env.ZALO_WEBHOOK_SECRET || 'zalo_secret',
+  telegram: {
+    token:      required('TELEGRAM_BOT_TOKEN'),
+    adminId:    parseInt(process.env.ADMIN_ID || '0', 10),
+    webhookUrl: process.env.WEBHOOK_URL || null,
   },
   express: {
     apiKey:  process.env.EXPRESS_API_KEY || null,
@@ -27,8 +26,6 @@ module.exports = {
   },
   notify: {
     intervalSec: parseInt(process.env.NOTIFY_INTERVAL || '60', 10),
-    batchSize:   parseInt(process.env.NOTIFY_BATCH_SIZE || '5', 10),
-    batchGapMs:  parseInt(process.env.NOTIFY_BATCH_GAP_MS || '150', 10),
   },
   credits: {
     monthlyFreeByPlan: { free: 5, pro: 20, business: 50 },
